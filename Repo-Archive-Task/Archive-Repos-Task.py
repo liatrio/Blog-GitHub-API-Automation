@@ -2,7 +2,7 @@ import logging
 import datetime
 import sys
 from github import Github
-from github import UnknownObjectException, GithubException
+from github import GithubException
 
 log = logging.getLogger(__name__)
 
