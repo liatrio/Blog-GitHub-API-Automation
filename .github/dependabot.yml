@@ -1,0 +1,14 @@
+---
+version: 2
+updates:
+  # Submit PRs for any updates to GitHub Actions.
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+
+  # Submit PRs for any updates to npm dependencies.
+  - package-ecosystem: npm
+    directory: '/javascript'
+    schedule:
+      interval: 'weekly'
