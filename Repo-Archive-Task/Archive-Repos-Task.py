@@ -13,8 +13,12 @@ stdout_handler = logging.StreamHandler(sys.stdout)
 log.addHandler(stdout_handler)
 
 
-# Returns true if the repo has a .NOARCHIVE file or has any topics.
+# Returns True if the repo should not be archived. This is determined by
+# checking if the repo has a .NOARCHIVE file, any topics, is older than 6 months
+# old, or any commits in the last 3 months.
 def repo_marked_noarchive(repo):
+    # First, we check if the repo has a .NOARCHIVE file. If it does, we return
+    # True.
     try:
         noarchive_status = repo.get_contents(".NOARCHIVE")
 
@@ -23,54 +27,47 @@ def repo_marked_noarchive(repo):
     except GithubException:
         log.error(f"[ERROR]: No .NOARCHIVE file found in {repo.full_name}.")
 
+    # Next, we check if the repo has any topics. If it does, we return True.
     try:
-        # Check if there are any topics
         repo_topics = repo.get_topics()
+
         if len(repo_topics) > 0:
             return True
     except GithubException:
         log.error(f"[ERROR]: Unable to get tags from repo {repo.full_name}.")
 
+    # Finally, we check if the repo was created over 6 months ago and has commit
+    # activity in the last 3 months. If it does, we return True.
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        six_months_ago = now - datetime.timedelta(days=180)
+        three_months_ago = now - datetime.timedelta(days=90)
+
+        # Check if the repo is younger than 6 months old. If it is, we return
+        # True.
+        if repo.created_at <= six_months_ago:
+            return True
+
+        # Get all commits in the last 3 months.
+        commits = repo.get_commits(since=three_months_ago)
+
+        # If there are any commits returned, we return True.
+        if commits.totalCount > 0:
+            return True
+    except GithubException:
+        log.error(f"[ERROR]: Failed to get commits for repository {repo.name}.")
+
     return False
 
 
-# Determines if a repo is over 6 months old and has no commits in the last 6 months, deeming it archivable.
-def repo_is_archivable(repo):
-    now = datetime.datetime.now(datetime.timezone.utc)
-    six_months_ago = now - datetime.timedelta(days=180)
+gh = Github("<access_token>")
 
-    log.info(f"[INFO]: Checking if {repo.full_name} is archivable.")
-
-    # Check if the repo is older than 6 months
-    if repo.created_at > six_months_ago:
-        return False
-
-    # Check if there were any commits in the last 6 months
-    try:
-        commits = repo.get_commits(since=six_months_ago)
-        if commits.totalCount > 0:
-            return False
-    except GithubException:
-        log.error(f"[ERROR]: Failed to get commits for repository {repo.name}.")
-        return False
-
-    return True
-
-
-g = Github("<access_token>")
-
-for repo in g.get_user().get_repos():
+for repo in gh.get_user().get_repos():
     if repo_marked_noarchive(repo):
-        log.info(f"Skipping {repo.full_name} as it is marked noarchive.")
+        log.info(f"[INFO]: Skipping {repo.full_name}.")
         continue
 
-    if not repo_is_archivable(repo):
-        log.info(
-            f"Skipping {repo.full_name} as it is not old enough or has commits in the last 6 months."
-        )
-        continue
-
-    log.info(f"[INFO]: Deleting {repo.full_name}.")
+    log.info(f"[INFO]: Archiving {repo.full_name}.")
 
     try:
         repo.edit(archived=True)
