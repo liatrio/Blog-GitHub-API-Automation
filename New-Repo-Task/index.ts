@@ -97,7 +97,8 @@ function getUserInput(): UserInput {
   const repoType = process.env.REPO_TYPE as RepoType
   if (!repoType) throw new Error('REPO_TYPE is a required environment variable.')
 
-  const repoOwner = process.env.REPO_OWNER
+  const repoOwner =
+    (process.env.GITHUB_REPOSITORY_OWNER as RepoType) || (process.env.REPO_OWNER as RepoType)
   if (!repoOwner) throw new Error('REPO_OWNER is a required environment variable.')
 
   const repoTopics = process.env.REPO_TOPICS?.split(',')
