@@ -6,12 +6,15 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 // #region Types
+/** The name of the team that will own the repository. */
 export type RepoTeamName = 'Platform' | 'Frontend' | 'Backend' | 'DevOps' | 'QA' | 'Design'
 
+/** The "templates" available to create a repo from. */
 export type RepoType = 'Bun' | 'Elysia'
 
+/** An object containing the team that'll own the repository. */
 export type RepoTeam = {
-  name: string
+  name: RepoTeamName
   description: string
 }
 
@@ -22,7 +25,7 @@ export type RepoTeams = {
 export type UserInput = {
   repoName: string
   repoTeam: RepoTeam
-  repoType?: RepoType
+  repoType: RepoType
   repoTopics?: string[]
   repoDescription?: string
 }
@@ -32,9 +35,10 @@ export type UserInput = {
 // Create a new Chalk instance to colorize console output.
 export const chalk = new Chalk({ level: 3 })
 
-// Maps to the process.env.GITHUB_TOKEN secret.
+// Maps to the GITHUB_TOKEN or GH_PAT secret, if it exists.
 export const ApiToken = process.env.GITHUB_TOKEN || process.env.GH_PAT
 
+// Throw an error if the GitHub Access Token is not found in the environment.
 if (!ApiToken) {
   throw new Error(
     'GitHub Access Token not found in environment, must be set as GITHUB_TOKEN or GH_PAT.',
@@ -44,42 +48,44 @@ if (!ApiToken) {
 // Create a new GitHub client using the GITHUB_TOKEN secret.
 export const gh = github.getOctokit(ApiToken)
 
-export const TemplateDetails = {
-  repo: 'New-Repo-Service-Job-Template',
-  path: 'README.njk',
-}
-
-export const RepoTeams: RepoTeams = {
+/** A map of the teams that can own a repository. */
+export const RepoTeams: { [key in RepoTeamName]: RepoTeam } = {
   Backend: {
     name: 'Backend',
-    description: 'Backend Team',
+    description: 'The team responsible for backend services.',
   },
   Design: {
     name: 'Design',
-    description: 'Design Team',
+    description: 'The team responsible for design.',
   },
   DevOps: {
     name: 'DevOps',
-    description: 'DevOps Team',
+    description: 'The team responsible for DevOps.',
   },
   Frontend: {
     name: 'Frontend',
-    description: 'Frontend Team',
+    description: 'The team responsible for frontend services.',
   },
   Platform: {
     name: 'Platform',
-    description: 'Platform Team',
+    description: 'The team responsible for the platform.',
   },
   QA: {
     name: 'QA',
-    description: 'QA Team',
+    description: 'The team responsible for QA.',
   },
 }
 
+/** The directory name of the current file (in this case `$CWD/New-Repo-Task/src/index.ts`). */
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // #endregion Constants
 
 // #region Functions
+/**
+ * Gets the user input from the action's inputs.
+ *
+ * @returns The user input.
+ */
 function getUserInput(): UserInput {
   const repoName = core.getInput('repo-name')
   if (!repoName) throw new Error('repo-name is required input')
