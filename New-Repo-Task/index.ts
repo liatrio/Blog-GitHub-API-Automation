@@ -234,6 +234,19 @@ try {
     pc.cyan(`[DEBUG] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
   )
 
+  console.log(pc.cyan(`[DEBUG] Attempting to get content w/ following opts:\n`))
+  console.log(
+    JSON.stringify(
+      {
+        repo: 'Blog-GitHub-API-Automation-Template',
+        path: `${userInput.repoType.toLowerCase()}/`,
+        owner: userInput.repoOwner,
+      },
+      null,
+      2,
+    ),
+  )
+
   const tmpFiles = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
     path: `${userInput.repoType.toLowerCase()}/`,
