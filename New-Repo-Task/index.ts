@@ -169,10 +169,14 @@ try {
   console.log(pc.cyan(debugLogMsgs.join('\n')))
 
   // Get the built README file content.
-  const builtReadMe = await createReadMe({ userInput, owner: userInput.repoOwner, repoType: userInput.repoType })
+  const builtReadMe = await createReadMe({
+    userInput,
+    owner: userInput.repoOwner,
+    repoType: userInput.repoType,
+  })
 
-  // Temporarily exit to avoid actually creating the repository.
-  process.exit(0)
+  // Log the built README file content.
+  console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
 
   // Create the new repository using the GitHub API.
   const createRepoRes = await gh.rest.repos.createForAuthenticatedUser({
@@ -190,8 +194,8 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.gray(`[INFO] Repo Create Status: ${createRepoRes.status}`))
-  console.log(pc.gray(`[INFO] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
+  console.log(pc.cyan(`[DEBUG] Repo Create Status: ${createRepoRes.status}`))
+  console.log(pc.cyan(`[DEBUG] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
 
   // Replace the topics on the new repository using the GitHub API.
   const topicsRes = await gh.rest.repos.replaceAllTopics({
@@ -201,8 +205,8 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.gray(`[INFO] Topics Response Status: ${topicsRes.status}`))
-  console.log(pc.gray(`[INFO] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
+  console.log(pc.cyan(`[DEBUG] Topics Response Status: ${topicsRes.status}`))
+  console.log(pc.cyan(`[DEBUG] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
 
   // Update the README file in the new repository using the GitHub API.
   const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
@@ -214,16 +218,21 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.gray(`[INFO] Add README Response Status: ${updateReadMeRes.status}`))
+  console.log(pc.cyan(`[DEBUG] Add README Response Status: ${updateReadMeRes.status}`))
   console.log(
-    pc.gray(`[INFO] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
+    pc.cyan(`[DEBUG] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
   )
 
   const tmpFiles = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
-    path: '/.github',
+    path: `${userInput.repoType.toLowerCase()}/`,
     owner: userInput.repoOwner,
   })
+
+  console.log(pc.cyan(`[DEBUG] Template Files Response Status: ${tmpFiles.status}`))
+  console.log(
+    pc.cyan(`[DEBUG] Template Files Response Data: ${JSON.stringify(tmpFiles.data, null, 2)}`),
+  )
 } catch (error) {
   console.error(pc.red('[ERROR] Error caught when creating and initializing repo'))
   console.error(error)
