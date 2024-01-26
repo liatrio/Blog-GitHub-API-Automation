@@ -6,6 +6,33 @@ import path from 'path'
 import pc from 'picocolors'
 import { fileURLToPath } from 'url'
 
+type GetContentsData = {
+  /** @enum {string} */
+  type: 'dir' | 'file' | 'submodule' | 'symlink'
+  size: number
+  name: string
+  path: string
+  content?: string
+  sha: string
+  /** Format: uri */
+  url: string
+  /** Format: uri */
+  git_url: string | null
+  /** Format: uri */
+  html_url: string | null
+  /** Format: uri */
+  download_url: string | null
+  submodule_git_url?: string
+  _links: {
+    /** Format: uri */
+    git: string | null
+    /** Format: uri */
+    html: string | null
+    /** Format: uri */
+    self: string
+  }
+}
+
 // #region Types
 /** The name of the team that will own the repository. */
 export type RepoTeamName = 'Platform' | 'Frontend' | 'Backend' | 'DevOps' | 'QA' | 'Design'
@@ -151,6 +178,55 @@ async function createReadMe(input: UserInput): Promise<string> {
 
   return nj.renderString(decodedReadMeTemplate, input)
 }
+
+type DecodedTemplateFile = {
+  path: string
+  content: string
+}
+
+async function getTemplateFiles(input: UserInput): Promise<DecodedTemplateFile[]> {
+  const templateFiles = await gh.rest.repos.getContent({
+    repo: 'Blog-GitHub-API-Automation-Template',
+    path: input.repoType.toLowerCase(),
+    owner: input.repoOwner,
+  })
+
+  if (templateFiles.status !== 200) throw new Error('Template files not found')
+
+  const filesData = templateFiles.data as GetContentsData[]
+  const decodedTemplateFiles: DecodedTemplateFile[] = []
+
+  // Log some response details from the GitHub API.
+  console.log(pc.gray(`[DEBUG] Template Files Status: ${templateFiles.status}`))
+
+  for (const file of filesData) {
+    // Check if file data is for a file.
+    if (file.type === 'file') {
+      // Check if file is a nunjucks template.
+      if (file.path.endsWith('.njk') && file.content) {
+        const decodedFile = {
+          path: file.path,
+          content: nj.renderString(
+            Buffer.from(file.content.toString(), 'base64').toString(),
+            input,
+          ),
+        }
+
+        decodedTemplateFiles.push(decodedFile)
+      } else if (file.content) {
+        // If it's a file with content, add it to the list.
+        const decodedFile = {
+          path: file.path,
+          content: Buffer.from(file.content.toString(), 'base64').toString(),
+        }
+
+        decodedTemplateFiles.push(decodedFile)
+      }
+    }
+  }
+
+  return decodedTemplateFiles
+}
 // #endregion Functions
 
 try {
@@ -169,12 +245,25 @@ try {
 
   console.log(pc.cyan(debugLogMsgs.join('\n')))
 
+  const templateFiles = await getTemplateFiles(userInput)
+
   // Get the built README file content.
-  const builtReadMe = await createReadMe(userInput)
+  // const builtReadMe = await createReadMe(userInput)
 
   // Log the built README file content.
-  console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
+  // console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
+  console.log(
+    pc.cyan(
+      `[DEBUG] We received the following ${templateFiles.length} files from the template repo`,
+    ),
+  )
 
+  for (const file of templateFiles) {
+    console.log(pc.cyan(`[DEBUG] File Path: ${file.path}`))
+  }
+
+  // Temporarily exit the process to prevent the repo from being created.
+  process.exit(0)
   // Create the new repository using the GitHub API.
   // const createRepoRes = await gh.rest.repos.createForAuthenticatedUser({
   //   // Required

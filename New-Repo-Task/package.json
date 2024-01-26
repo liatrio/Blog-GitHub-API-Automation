@@ -37,6 +37,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@octokit/openapi-types": "^19.1.0",
     "@octokit/rest": "^20.0.2",
     "dayjs": "^1.11.10",
     "fs-extra": "^11.2.0",
