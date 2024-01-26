@@ -1,0 +1,61 @@
+name: Create a new Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo-name:
+        description: 'Name of the repo'
+        required: true
+        type: string
+
+      repo-team:
+        description: 'The team that owns the repo.'
+        required: true
+        type: choice
+        options:
+          - Platform
+          - Frontend
+          - Backend
+          - DevOps
+          - QA
+          - Design
+
+      repo-description:
+        description: 'An optional description of the repo.'
+        required: false
+        type: string
+
+      repo-topics:
+        description: 'An optional list of topics for the repo, separated by commas.'
+        required: false
+        type: string
+
+      repo-type:
+        description: 'The type of repo to create.'
+        required: true
+        type: choice
+        default: Elysia-API
+        options:
+          - Bun
+          - Elysia-API
+          - Elysia-Plugin
+
+jobs:
+  create:
+    name: Create a new Repo
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install Dependencies
+        run: bun install
+
+      - name: Run Create Script
+        run: bun run src/index.ts

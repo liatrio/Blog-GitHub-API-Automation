@@ -1,0 +1,26 @@
+{#
+  This is a template file built for use with Nunjucks.
+#}
+# {{repoName}}
+
+_Owned by: **{{repoTeam.name}}**_
+
+## Description
+
+{{repoDescription}}
+
+### Topics
+
+{% if repoTopics -%}
+{% for topic in repoTopics -%}
+- {{ topic }}
+{% endfor %}
+{% else -%}
+_No topics are assigned to this repository._
+{% endif %}
+
+## Owning Team
+
+**{{repoTeam.name}}**
+
+{{repoTeam.description}}
