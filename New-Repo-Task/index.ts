@@ -170,7 +170,7 @@ try {
   console.log(pc.gray(logMsgs.join('\n')))
 
   // Get the built README file content.
-  const builtReadMe = await createReadMe({ userInput, owner: userInput., repoType: userInput.repoType })
+  const builtReadMe = await createReadMe({ userInput, owner: userInput.repoOwner, repoType: userInput.repoType })
 
   // Temporarily exit to avoid actually creating the repository.
   process.exit(0)
