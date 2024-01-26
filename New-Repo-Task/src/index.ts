@@ -1,8 +1,8 @@
 import core from '@actions/core'
 import github from '@actions/github'
-import { Chalk } from 'chalk'
 import nj from 'nunjucks'
 import path from 'path'
+import pc from 'picocolors'
 import { fileURLToPath } from 'url'
 
 // #region Types
@@ -32,9 +32,6 @@ export type UserInput = {
 // #endregion Types
 
 // #region Constants
-// Create a new Chalk instance to colorize console output.
-export const chalk = new Chalk({ level: 3 })
-
 // Maps to the GITHUB_TOKEN or GH_PAT secret, if it exists.
 export const ApiToken = process.env.GITHUB_TOKEN || process.env.GH_PAT
 
@@ -131,7 +128,7 @@ async function createReadMe(input: CreateReadMeInput): Promise<string> {
   if (readMeTemplate.status !== 200) throw new Error('README template not found')
 
   // Log some response details from the GitHub API.
-  console.debug(chalk.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
+  console.debug(pc.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
   core.debug(`[DEBUG] README Template Status: ${readMeTemplate.status}`)
 
   // Decode the README template file contents.
@@ -153,12 +150,17 @@ try {
   // Get the owner of the repository from the context.
   const { owner } = github.context.repo
 
-  core.info(`Creating a new repository with the following details:\n`)
-  core.info(`- Name: ${userInput.repoName}`)
-  core.info(`- Team: ${userInput.repoTeam.name}`)
-  core.info(`- Type: ${userInput.repoType}`)
-  core.info(`- Topics: ${userInput.repoTopics?.join(', ')}`)
-  core.info(`- Description: ${userInput.repoDescription}`)
+  const logMsgs = [
+    `[INFO] Creating a new repository with the following details:\n`,
+    `- Name: ${userInput.repoName}`,
+    `- Team: ${userInput.repoTeam.name}`,
+    `- Type: ${userInput.repoType}`,
+    `- Topics: ${userInput.repoTopics?.join(', ')}`,
+    `- Description: ${userInput.repoDescription}`,
+  ]
+
+  core.info(logMsgs.join('\n'))
+  console.log(pc.gray(logMsgs.join('\n')))
   core.notice('Test Notice...', { title: 'Test Notice Title' })
 
   // Get the built README file content.
@@ -183,8 +185,8 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(chalk.gray(`[INFO] Repo Create Status: ${createRepoRes.status}`))
-  console.log(chalk.gray(`[INFO] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
+  console.log(pc.gray(`[INFO] Repo Create Status: ${createRepoRes.status}`))
+  console.log(pc.gray(`[INFO] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
 
   // Replace the topics on the new repository using the GitHub API.
   const topicsRes = await gh.rest.repos.replaceAllTopics({
@@ -194,8 +196,8 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(chalk.gray(`[INFO] Topics Response Status: ${topicsRes.status}`))
-  console.log(chalk.gray(`[INFO] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
+  console.log(pc.gray(`[INFO] Topics Response Status: ${topicsRes.status}`))
+  console.log(pc.gray(`[INFO] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
 
   // Update the README file in the new repository using the GitHub API.
   const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
@@ -207,9 +209,9 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(chalk.gray(`[INFO] Add README Response Status: ${updateReadMeRes.status}`))
+  console.log(pc.gray(`[INFO] Add README Response Status: ${updateReadMeRes.status}`))
   console.log(
-    chalk.gray(`[INFO] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
+    pc.gray(`[INFO] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
   )
 
   const tmpFiles = await gh.rest.repos.getContent({
@@ -218,7 +220,7 @@ try {
     owner,
   })
 } catch (error) {
-  console.error(chalk.red('[ERROR] Error caught when creating and initializing repo'))
+  console.error(pc.red('[ERROR] Error caught when creating and initializing repo'))
   console.error(error)
 
   // @ts-ignore
