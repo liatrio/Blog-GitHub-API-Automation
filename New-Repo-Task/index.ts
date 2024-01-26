@@ -29,6 +29,7 @@ export type UserInput = {
   repoName: string
   repoTeam: RepoTeam
   repoType: RepoType
+  repoOwner: string
   repoTopics?: string[]
   repoDescription?: string
 }
@@ -113,6 +114,7 @@ function getUserInput(): UserInput {
     repoName,
     repoTeam: RepoTeams[repoTeamName],
     repoType,
+    repoOwner,
     repoTopics,
     repoDescription,
   }
@@ -156,9 +158,6 @@ try {
   // Get the user input from the action's inputs.
   const userInput = getUserInput()
 
-  // Get the owner of the repository from the context.
-  const { owner } = github.context.repo
-
   const logMsgs = [
     `[INFO] Creating a new repository with the following details:\n`,
     `- Name: ${userInput.repoName}`,
@@ -168,12 +167,10 @@ try {
     `- Description: ${userInput.repoDescription}`,
   ]
 
-  core.info(logMsgs.join('\n'))
   console.log(pc.gray(logMsgs.join('\n')))
-  core.notice('Test Notice...', { title: 'Test Notice Title' })
 
   // Get the built README file content.
-  const builtReadMe = await createReadMe({ userInput, owner, repoType: userInput.repoType })
+  const builtReadMe = await createReadMe({ userInput, owner: userInput., repoType: userInput.repoType })
 
   // Temporarily exit to avoid actually creating the repository.
   process.exit(0)
