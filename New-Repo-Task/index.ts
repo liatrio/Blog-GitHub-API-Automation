@@ -1,5 +1,6 @@
-import core from '@actions/core'
-import github from '@actions/github'
+// import core from '@actions/core'
+// import github from '@actions/github'
+import { Octokit } from '@octokit/rest'
 import nj from 'nunjucks'
 import path from 'path'
 import pc from 'picocolors'
@@ -18,10 +19,12 @@ export type RepoTeam = {
   description: string
 }
 
+/** An object containing all the teams that can own a repository. */
 export type RepoTeams = {
   [key in RepoTeamName]: RepoTeam
 }
 
+/** The input for creating the repo provided by the user via GitHub Actions inputs. */
 export type UserInput = {
   repoName: string
   repoTeam: RepoTeam
@@ -30,6 +33,7 @@ export type UserInput = {
   repoDescription?: string
 }
 
+/** The input required to create the README file. */
 type CreateReadMeInput = {
   userInput: UserInput
   repoType: RepoType
@@ -48,8 +52,8 @@ if (!ApiToken) {
   )
 }
 
-// Create a new GitHub client using the GITHUB_TOKEN secret.
-export const gh = github.getOctokit(ApiToken)
+// Create a new GitHub client using the api token provided.
+export const gh = new Octokit({ auth: ApiToken })
 
 /** A map of the teams that can own a repository. */
 export const RepoTeams: { [key in RepoTeamName]: RepoTeam } = {
@@ -90,15 +94,17 @@ export const __dirname = path.dirname(fileURLToPath(import.meta.url))
  * @returns The user input.
  */
 function getUserInput(): UserInput {
-  const repoName = core.getInput('repo-name')
-  if (!repoName) throw new Error('repo-name is required input')
+  const repoName = process.env.REPO_NAME
+  if (!repoName) throw new Error('REPO_NAME is a required environment variable.')
 
-  const repoTeamName = core.getInput('repo-team') as RepoTeamName
-  if (!repoTeamName) throw new Error('repo-team is required input')
+  const repoTeamName = process.env.REPO_TEAM as RepoTeamName
+  if (!repoTeamName) throw new Error('REPO_TEAM is a required environment variable.')
 
-  const repoType = core.getInput('repo-type') as RepoType
-  const repoTopics = core.getInput('repo-topics').split(',')
-  const repoDescription = core.getInput('repo-description')
+  const repoType = process.env.REPO_TYPE as RepoType
+  if (!repoType) throw new Error('REPO_TYPE is a required environment variable.')
+
+  const repoTopics = process.env.REPO_TOPICS?.split(',')
+  const repoDescription = process.env.REPO_DESCRIPTION
 
   return {
     repoName,
