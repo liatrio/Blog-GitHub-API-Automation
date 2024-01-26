@@ -176,12 +176,26 @@ try {
   console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
 
   // Create the new repository using the GitHub API.
-  const createRepoRes = await gh.rest.repos.createForAuthenticatedUser({
+  // const createRepoRes = await gh.rest.repos.createForAuthenticatedUser({
+  //   // Required
+  //   name: userInput.repoName,
+  //   description: userInput.repoDescription,
+
+  //   // Optional
+  //   private: true,
+  //   has_wiki: false,
+  //   has_issues: true,
+  //   has_projects: true,
+  //   has_downloads: true,
+  //   has_discussions: false,
+  // })
+  const createRepoRes = await gh.rest.repos.createInOrg({
     // Required
     name: userInput.repoName,
-    description: userInput.repoDescription,
+    org: userInput.repoOwner,
 
     // Optional
+    description: userInput.repoDescription,
     private: true,
     has_wiki: false,
     has_issues: true,
