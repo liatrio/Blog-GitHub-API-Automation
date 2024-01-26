@@ -6,33 +6,6 @@ import path from 'path'
 import pc from 'picocolors'
 import { fileURLToPath } from 'url'
 
-type GetContentsData = {
-  /** @enum {string} */
-  type: 'dir' | 'file' | 'submodule' | 'symlink'
-  size: number
-  name: string
-  path: string
-  content?: string
-  sha: string
-  /** Format: uri */
-  url: string
-  /** Format: uri */
-  git_url: string | null
-  /** Format: uri */
-  html_url: string | null
-  /** Format: uri */
-  download_url: string | null
-  submodule_git_url?: string
-  _links: {
-    /** Format: uri */
-    git: string | null
-    /** Format: uri */
-    html: string | null
-    /** Format: uri */
-    self: string
-  }
-}
-
 // #region Types
 /** The name of the team that will own the repository. */
 export type RepoTeamName = 'Platform' | 'Frontend' | 'Backend' | 'DevOps' | 'QA' | 'Design'
@@ -59,6 +32,40 @@ export type UserInput = {
   repoOwner: string
   repoTopics?: string[]
   repoDescription?: string
+  templateRepoName: string
+}
+
+/** An object containing the path to file that's been rendered and the path to the file. */
+type RenderedTemplateFile = {
+  path: string
+  content: string
+}
+
+type GetContentsData = {
+  /** @enum {string} */
+  type: 'dir' | 'file' | 'submodule' | 'symlink'
+  size: number
+  name: string
+  path: string
+  content?: string
+  sha: string
+  /** Format: uri */
+  url: string
+  /** Format: uri */
+  git_url: string | null
+  /** Format: uri */
+  html_url: string | null
+  /** Format: uri */
+  download_url: string | null
+  submodule_git_url?: string
+  _links: {
+    /** Format: uri */
+    git: string | null
+    /** Format: uri */
+    html: string | null
+    /** Format: uri */
+    self: string
+  }
 }
 // #endregion Types
 
@@ -106,6 +113,7 @@ export const RepoTeams: { [key in RepoTeamName]: RepoTeam } = {
 
 /** The directory name of the current file (in this case `$CWD/New-Repo-Task/src/index.ts`). */
 export const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
 // #endregion Constants
 
 // #region Functions
@@ -114,7 +122,9 @@ export const __dirname = path.dirname(fileURLToPath(import.meta.url))
  *
  * @returns The user input.
  */
-function getUserInput(): UserInput {
+function getInput(): UserInput {
+  const templateRepoName = process.env.TEMPLATE_REPO_NAME || 'Blog-GitHub-API-Automation-Template'
+
   const repoName = process.env.REPO_NAME
   if (!repoName) throw new Error('REPO_NAME is a required environment variable.')
 
@@ -138,6 +148,7 @@ function getUserInput(): UserInput {
     repoOwner,
     repoTopics,
     repoDescription,
+    templateRepoName,
   }
 }
 
@@ -153,8 +164,10 @@ async function createReadMe(input: UserInput): Promise<string> {
   const readMeTemplatePath = `${input.repoType.toLowerCase()}/README.njk`
 
   // Log some debug information.
-  console.log(pc.gray(`[DEBUG] README Template Path: ${readMeTemplatePath}`))
-  console.log(pc.gray(`[DEBUG] README User Input: ${JSON.stringify(input, null, 2)}`))
+  console.log(pc.gray(`[DEBUG][index#createReadMe] README Template Path: ${readMeTemplatePath}`))
+  console.log(
+    pc.gray(`[DEBUG][index#createReadMe] README User Input: ${JSON.stringify(input, null, 2)}`),
+  )
 
   // Get the README file for the /New-Repo-Job directory.
   const readMeTemplate = await gh.rest.repos.getContent({
@@ -166,7 +179,9 @@ async function createReadMe(input: UserInput): Promise<string> {
   if (readMeTemplate.status !== 200) throw new Error('README template not found')
 
   // Log some response details from the GitHub API.
-  console.log(pc.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
+  console.log(
+    pc.gray(`[DEBUG][index#createReadMe] README Template Status: ${readMeTemplate.status}`),
+  )
 
   // Decode the README template file contents.
   const decodedReadMeTemplate = Buffer.from(
@@ -234,7 +249,7 @@ try {
   const userInput = getUserInput()
 
   const debugLogMsgs = [
-    `[DEBUG] Creating a new repository with the following details:\n`,
+    `[DEBUG][index#main] Creating a new repository with the following details:\n`,
     `- Name: ${userInput.repoName}`,
     `- Team: ${userInput.repoTeam.name}`,
     `- Type: ${userInput.repoType}`,
@@ -254,12 +269,12 @@ try {
   // console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
   console.log(
     pc.cyan(
-      `[DEBUG] We received the following ${templateFiles.length} files from the template repo`,
+      `[DEBUG][index#main] We received the following ${templateFiles.length} files from the template repo`,
     ),
   )
 
   for (const file of templateFiles) {
-    console.log(pc.cyan(`[DEBUG] File Path: ${file.path}`))
+    console.log(pc.cyan(`[DEBUG][index#main] File Path: ${file.path}`))
   }
 
   // Temporarily exit the process to prevent the repo from being created.
@@ -294,8 +309,10 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.cyan(`[DEBUG] Repo Create Status: ${createRepoRes.status}`))
-  console.log(pc.cyan(`[DEBUG] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
+  console.log(pc.cyan(`[DEBUG][index#main] Repo Create Status: ${createRepoRes.status}`))
+  console.log(
+    pc.cyan(`[DEBUG][index#main] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`),
+  )
 
   // Replace the topics on the new repository using the GitHub API.
   const topicsRes = await gh.rest.repos.replaceAllTopics({
@@ -305,8 +322,9 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.cyan(`[DEBUG] Topics Response Status: ${topicsRes.status}`))
-  console.log(pc.cyan(`[DEBUG] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
+  console.log(pc.cyan(`[DEBUG][index#main] Topics Response Status: ${topicsRes.status}`))
+  console.log(
+    pc.cyan(`[DEBUG][index#main] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`),
 
   // Update the README file in the new repository using the GitHub API.
   const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
@@ -318,12 +336,12 @@ try {
   })
 
   // Log some response details from the GitHub API.
-  console.log(pc.cyan(`[DEBUG] Add README Response Status: ${updateReadMeRes.status}`))
-  console.log(
-    pc.cyan(`[DEBUG] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
-  )
+  // console.log(pc.cyan(`[DEBUG] Add README Response Status: ${updateReadMeRes.status}`))
+  // console.log(
+  //   pc.cyan(`[DEBUG] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
+  // )
 
-  console.log(pc.cyan(`[DEBUG] Attempting to get content w/ following opts:\n`))
+  console.log(pc.cyan(`[DEBUG][index#main] Attempting to get content w/ following opts:\n`))
   console.log(
     JSON.stringify(
       {
@@ -342,11 +360,13 @@ try {
     owner: userInput.repoOwner,
   })
 
-  console.log(pc.cyan(`[DEBUG] Template Files Response Status: ${tmpFiles.status}`))
+  console.log(pc.cyan(`[DEBUG][index#main] Template Files Response Status: ${tmpFiles.status}`))
   console.log(
-    pc.cyan(`[DEBUG] Template Files Response Data: ${JSON.stringify(tmpFiles.data, null, 2)}`),
+    pc.cyan(
+      `[DEBUG][index#main] Template Files Response Data: ${JSON.stringify(tmpFiles.data, null, 2)}`,
+    ),
   )
 } catch (error) {
-  console.error(pc.red('[ERROR] Error caught when creating and initializing repo'))
+  console.error(pc.red('[ERROR][index#main] Error caught when creating and initializing repo'))
   console.error(error)
 }
