@@ -249,7 +249,7 @@ try {
 
   const tmpFiles = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
-    path: `${userInput.repoType.toLowerCase()}/`,
+    path: userInput.repoType.toLowerCase(),
     owner: userInput.repoOwner,
   })
 
