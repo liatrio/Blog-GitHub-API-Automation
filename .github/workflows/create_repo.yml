@@ -54,11 +54,8 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
 
-      - name: Navigate to New-Repo-Task Directory
-        run: cd New-Repo-Task
-
       - name: Install Dependencies
-        run: bun install
+        run: bun install --cwd ./New-Repo-Task
 
       - name: Run Create Script
-        run: bun run src/index.ts
+        run: bun run ./New-Repo-Task/src/index.ts
