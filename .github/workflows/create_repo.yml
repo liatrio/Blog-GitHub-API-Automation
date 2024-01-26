@@ -53,8 +53,14 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
 
+      - name: Temp Test
+        run: |
+          ls -la
+          cd New-Repo-Task
+          ls -la
+
       - name: Install Dependencies
-        run: bun install --cwd ./New-Repo-Task
+        run: bun install
 
       - name: Run Create Script
-        run: bun run ./New-Repo-Task/src/index.ts
+        run: bun run ./src/index.ts
