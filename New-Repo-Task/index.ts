@@ -163,6 +163,7 @@ try {
     `- Name: ${userInput.repoName}`,
     `- Team: ${userInput.repoTeam.name}`,
     `- Type: ${userInput.repoType}`,
+    `- Owner: ${userInput.repoOwner}`,
     `- Topics: ${userInput.repoTopics?.join(', ')}`,
     `- Description: ${userInput.repoDescription}`,
   ]
