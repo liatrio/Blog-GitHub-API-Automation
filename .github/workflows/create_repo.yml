@@ -58,3 +58,8 @@ jobs:
         run: bun run ./New-Repo-Task/index.ts
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
+          REPO_NAME: ${{ inputs.repo-name }}
+          REPO_TEAM: ${{ inputs.repo-team }}
+          REPO_DESCRIPTION: ${{ inputs.repo-description }}
+          REPO_TOPICS: ${{ inputs.repo-topics }}
+          REPO_TYPE: ${{ inputs.repo-type }}
