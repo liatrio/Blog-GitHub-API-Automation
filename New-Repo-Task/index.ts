@@ -194,59 +194,102 @@ async function createReadMe(input: UserInput): Promise<string> {
   return nj.renderString(decodedReadMeTemplate, input)
 }
 
-type DecodedTemplateFile = {
-  path: string
-  content: string
+function getNewFilename(filename: string) {
+  if (filename === 'README.njk') return 'README.md'
+  if (filename === 'package.njk') return 'package.json'
+
+  return filename
 }
 
-async function getTemplateFiles(input: UserInput): Promise<DecodedTemplateFile[]> {
-  const templateFiles = await gh.rest.repos.getContent({
-    repo: 'Blog-GitHub-API-Automation-Template',
-    path: input.repoType.toLowerCase(),
-    owner: input.repoOwner,
-  })
+/**
+ * Attempts to render the provided Nunjucks template
+ * @param file The file to render, as returned from the GitHub API.
+ * @param input The user input to use when rendering the file.
+ * @returns A rendered file, if the file has content, otherwise undefined.
+ */
+function renderFileData(file: GetContentsData, input: UserInput): RenderedTemplateFile | undefined {
+  // Verify the file has content.
+  if (file.content) {
+    const filename = path.basename(file.path)
+    const fileDir = path.dirname(file.path)
 
-  if (templateFiles.status !== 200) throw new Error('Template files not found')
+    console.log(pc.cyan(`[DEBUG][index#renderFileData] Rendering file: ${filename}`))
+    console.log(pc.cyan(`[DEBUG][index#renderFileData] File Directory: ${fileDir}`))
 
-  const filesData = templateFiles.data as GetContentsData[]
-  const decodedTemplateFiles: DecodedTemplateFile[] = []
+    // Check if the file is a Nunjucks template and render it if so.
+    if (file.path.endsWith('.njk')) {
+      // Get the new filename for the rendered file.
+      const newFilename = getNewFilename(filename)
 
-  // Log some response details from the GitHub API.
-  console.log(pc.gray(`[DEBUG] Template Files Status: ${templateFiles.status}`))
+      // Log some debug information.
+      console.log(pc.cyan(`[DEBUG][index#renderFileData] New Filename: ${newFilename}`))
 
-  for (const file of filesData) {
-    // Check if file data is for a file.
-    if (file.type === 'file') {
-      // Check if file is a nunjucks template.
-      if (file.path.endsWith('.njk') && file.content) {
-        const decodedFile = {
-          path: file.path,
-          content: nj.renderString(
-            Buffer.from(file.content.toString(), 'base64').toString(),
-            input,
-          ),
-        }
-
-        decodedTemplateFiles.push(decodedFile)
-      } else if (file.content) {
-        // If it's a file with content, add it to the list.
-        const decodedFile = {
-          path: file.path,
-          content: Buffer.from(file.content.toString(), 'base64').toString(),
-        }
-
-        decodedTemplateFiles.push(decodedFile)
+      return {
+        path: path.join(fileDir, getNewFilename(filename)),
+        content: nj.renderString(Buffer.from(file.content.toString(), 'base64').toString(), input),
+      }
+    } else {
+      return {
+        path: file.path,
+        content: Buffer.from(file.content.toString(), 'base64').toString(),
       }
     }
-  }
+  } else return undefined
+}
 
-  return decodedTemplateFiles
+async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[]> {
+  const decodedTemplateFiles: RenderedTemplateFile[] = []
+
+  try {
+    // Get the git tree to gather all the files in the template repo.
+    const { status, data } = await gh.request('GET /repos/{owner}/{repo}/git/trees/{tree_sha}', {
+      headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+      repo: input.templateRepoName,
+      owner: input.repoOwner,
+      recursive: 'true',
+      tree_sha: 'main',
+    })
+
+    // Make sure the request was successful, otherwise throw an error.
+    if (status !== 200) throw new Error('Template file tree(s) not found')
+
+    // Log some response details from the GitHub API.
+    console.log(pc.gray(`[DEBUG][index#getTemplateFiles] Template Files Tree Status: ${status}`))
+
+    for (const treeNode of data.tree) {
+      // Check that the data is for a blob, has a path, and is in the directory for the repo type.
+      if (
+        treeNode.type === 'blob' &&
+        treeNode.path &&
+        treeNode.path.startsWith(`${input.repoType.toLowerCase()}/`)
+      ) {
+        const fileContent = await gh.rest.repos.getContent({
+          repo: input.templateRepoName,
+          owner: input.repoOwner,
+          path: treeNode.path,
+        })
+
+        // Make sure there is actually content to use.
+        for (const file of fileContent.data as GetContentsData[]) {
+          const renderedFile = renderFileData(file, input)
+          if (renderedFile) decodedTemplateFiles.push(renderedFile)
+        }
+      }
+    }
+
+    return decodedTemplateFiles
+  } catch (error) {
+    console.error(`[ERROR][index#getTemplateFiles] Error caught when getting template files:`)
+    console.error(error)
+
+    return []
+  }
 }
 // #endregion Functions
 
 try {
   // Get the user input from the action's inputs.
-  const userInput = getUserInput()
+  const userInput = getInput()
 
   const debugLogMsgs = [
     `[DEBUG][index#main] Creating a new repository with the following details:\n`,
@@ -325,15 +368,16 @@ try {
   console.log(pc.cyan(`[DEBUG][index#main] Topics Response Status: ${topicsRes.status}`))
   console.log(
     pc.cyan(`[DEBUG][index#main] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`),
+  )
 
   // Update the README file in the new repository using the GitHub API.
-  const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
-    message: 'feat: updated README with values from GitHub Action',
-    content: Buffer.from(builtReadMe).toString('base64'),
-    path: 'README.md',
-    repo: userInput.repoName,
-    owner: userInput.repoOwner,
-  })
+  // const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
+  //   message: 'feat: updated README with values from GitHub Action',
+  //   content: Buffer.from(builtReadMe).toString('base64'),
+  //   path: 'README.md',
+  //   repo: userInput.repoName,
+  //   owner: userInput.repoOwner,
+  // })
 
   // Log some response details from the GitHub API.
   // console.log(pc.cyan(`[DEBUG] Add README Response Status: ${updateReadMeRes.status}`))
