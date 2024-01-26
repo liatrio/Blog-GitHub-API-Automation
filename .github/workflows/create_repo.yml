@@ -3,12 +3,12 @@ name: Create a new Repo
 on:
   workflow_dispatch:
     inputs:
-      repo-name:
+      RepoName:
         description: 'Name of the repo'
         required: true
         type: string
 
-      repo-team:
+      RepoTeam:
         description: 'The team that owns the repo.'
         required: true
         type: choice
@@ -20,17 +20,17 @@ on:
           - QA
           - Design
 
-      repo-description:
+      RepoDescription:
         description: 'An optional description of the repo.'
         required: false
         type: string
 
-      repo-topics:
+      RepoTopics:
         description: 'An optional list of topics for the repo, separated by commas.'
         required: false
         type: string
 
-      repo-type:
+      RepoType:
         description: 'The type of repo to create.'
         required: true
         type: choice
@@ -58,9 +58,9 @@ jobs:
         run: bun run ./New-Repo-Task/index.ts
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
-          REPO_NAME: ${{ inputs.repo-name }}
-          REPO_TEAM: ${{ inputs.repo-team }}
-          REPO_DESCRIPTION: ${{ inputs.repo-description }}
-          REPO_TOPICS: ${{ inputs.repo-topics }}
-          REPO_TYPE: ${{ inputs.repo-type }}
-          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ inputs.RepoName }}
+          REPO_TEAM: ${{ inputs.RepoTeam }}
+          REPO_DESCRIPTION: ${{ inputs.RepoDescription }}
+          REPO_TOPICS: ${{ inputs.RepoTopics }}
+          REPO_TYPE: ${{ inputs.RepoType }}
+          # REPO_OWNER: ${{ github.repository_owner }}
