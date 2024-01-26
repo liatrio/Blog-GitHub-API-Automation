@@ -106,18 +106,33 @@ function getUserInput(): UserInput {
   }
 }
 
-async function createReadMe(userInput: UserInput, owner: string): Promise<string> {
+type CreateReadMeInput = {
+  userInput: UserInput
+  repoType: RepoType
+  owner: string
+}
+
+/**
+ * Creates a new README file for a repository using the provided `userInput`, `owner`, and
+ * `repoType` parameters, along with Nunjucks, to render and return the README file.
+ *
+ * @param input The input required to create the README file.
+ *
+ * @returns The rendered README file as a string.
+ */
+async function createReadMe(input: CreateReadMeInput): Promise<string> {
   // Get the README file for the /New-Repo-Job directory.
   const readMeTemplate = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
-    path: '/README.njk',
-    owner,
+    path: `${input.repoType.toLowerCase()}/README.njk`,
+    owner: input.owner,
   })
 
   if (readMeTemplate.status !== 200) throw new Error('README template not found')
 
   // Log some response details from the GitHub API.
-  console.log(chalk.gray(`[INFO] README Template Status: ${readMeTemplate.status}`))
+  console.debug(chalk.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
+  core.debug(`[DEBUG] README Template Status: ${readMeTemplate.status}`)
 
   // Decode the README template file contents.
   const decodedReadMeTemplate = Buffer.from(
@@ -127,7 +142,7 @@ async function createReadMe(userInput: UserInput, owner: string): Promise<string
     readMeTemplate.data.encoding,
   ).toString()
 
-  return nj.renderString(decodedReadMeTemplate, userInput)
+  return nj.renderString(decodedReadMeTemplate, input.userInput)
 }
 // #endregion Functions
 
@@ -144,10 +159,10 @@ try {
   core.info(`- Type: ${userInput.repoType}`)
   core.info(`- Topics: ${userInput.repoTopics?.join(', ')}`)
   core.info(`- Description: ${userInput.repoDescription}`)
-  core.notice('Test Notice...', {title: 'Test Notice Title' })
+  core.notice('Test Notice...', { title: 'Test Notice Title' })
 
   // Get the built README file content.
-  const builtReadMe = await createReadMe(userInput, owner)
+  const builtReadMe = await createReadMe({ userInput, owner, repoType: userInput.repoType })
 
   // Temporarily exit to avoid actually creating the repository.
   process.exit(0)
@@ -169,9 +184,7 @@ try {
 
   // Log some response details from the GitHub API.
   console.log(chalk.gray(`[INFO] Repo Create Status: ${createRepoRes.status}`))
-  console.log(
-    chalk.gray(`[INFO] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`),
-  )
+  console.log(chalk.gray(`[INFO] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`))
 
   // Replace the topics on the new repository using the GitHub API.
   const topicsRes = await gh.rest.repos.replaceAllTopics({
@@ -182,9 +195,7 @@ try {
 
   // Log some response details from the GitHub API.
   console.log(chalk.gray(`[INFO] Topics Response Status: ${topicsRes.status}`))
-  console.log(
-    chalk.gray(`[INFO] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`),
-  )
+  console.log(chalk.gray(`[INFO] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`))
 
   // Update the README file in the new repository using the GitHub API.
   const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
@@ -198,9 +209,7 @@ try {
   // Log some response details from the GitHub API.
   console.log(chalk.gray(`[INFO] Add README Response Status: ${updateReadMeRes.status}`))
   console.log(
-    chalk.gray(
-      `[INFO] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`,
-    ),
+    chalk.gray(`[INFO] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
   )
 
   const tmpFiles = await gh.rest.repos.getContent({
@@ -208,8 +217,6 @@ try {
     path: '/.github',
     owner,
   })
-  
-  const 
 } catch (error) {
   console.error(chalk.red('[ERROR] Error caught when creating and initializing repo'))
   console.error(error)
