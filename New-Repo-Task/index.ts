@@ -29,6 +29,12 @@ export type UserInput = {
   repoTopics?: string[]
   repoDescription?: string
 }
+
+type CreateReadMeInput = {
+  userInput: UserInput
+  repoType: RepoType
+  owner: string
+}
 // #endregion Types
 
 // #region Constants
@@ -101,12 +107,6 @@ function getUserInput(): UserInput {
     repoTopics,
     repoDescription,
   }
-}
-
-type CreateReadMeInput = {
-  userInput: UserInput
-  repoType: RepoType
-  owner: string
 }
 
 /**
