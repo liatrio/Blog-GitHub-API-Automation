@@ -140,7 +140,6 @@ async function createReadMe(input: CreateReadMeInput): Promise<string> {
 
   // Log some response details from the GitHub API.
   console.debug(pc.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
-  core.debug(`[DEBUG] README Template Status: ${readMeTemplate.status}`)
 
   // Decode the README template file contents.
   const decodedReadMeTemplate = Buffer.from(
@@ -198,7 +197,7 @@ try {
   const topicsRes = await gh.rest.repos.replaceAllTopics({
     names: userInput.repoTopics || [],
     repo: userInput.repoName,
-    owner,
+    owner: userInput.repoOwner,
   })
 
   // Log some response details from the GitHub API.
@@ -211,7 +210,7 @@ try {
     content: Buffer.from(builtReadMe).toString('base64'),
     path: 'README.md',
     repo: userInput.repoName,
-    owner,
+    owner: userInput.repoOwner,
   })
 
   // Log some response details from the GitHub API.
@@ -223,12 +222,9 @@ try {
   const tmpFiles = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
     path: '/.github',
-    owner,
+    owner: userInput.repoOwner,
   })
 } catch (error) {
   console.error(pc.red('[ERROR] Error caught when creating and initializing repo'))
   console.error(error)
-
-  // @ts-ignore
-  core.setFailed(error.message)
 }
