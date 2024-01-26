@@ -43,8 +43,6 @@ jobs:
   create:
     name: Create a new Repo
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
