@@ -34,11 +34,10 @@ on:
         description: 'The type of repo to create.'
         required: true
         type: choice
-        default: Elysia-API
+        default: Elysia
         options:
           - Bun
-          - Elysia-API
-          - Elysia-Plugin
+          - Elysia
 
 jobs:
   create:
