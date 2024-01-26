@@ -157,8 +157,8 @@ try {
   // Get the user input from the action's inputs.
   const userInput = getUserInput()
 
-  const logMsgs = [
-    `[INFO] Creating a new repository with the following details:\n`,
+  const debugLogMsgs = [
+    `[DEBUG] Creating a new repository with the following details:\n`,
     `- Name: ${userInput.repoName}`,
     `- Team: ${userInput.repoTeam.name}`,
     `- Type: ${userInput.repoType}`,
@@ -166,7 +166,7 @@ try {
     `- Description: ${userInput.repoDescription}`,
   ]
 
-  console.log(pc.gray(logMsgs.join('\n')))
+  console.log(pc.cyan(debugLogMsgs.join('\n')))
 
   // Get the built README file content.
   const builtReadMe = await createReadMe({ userInput, owner: userInput.repoOwner, repoType: userInput.repoType })
