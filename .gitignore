@@ -177,3 +177,5 @@ dist
 New-Repo-Task/src/tester.ts
 
 Template-Repo/
+
+assets/
