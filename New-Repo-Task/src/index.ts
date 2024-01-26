@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url'
 // #region Types
 export type RepoTeamName = 'Platform' | 'Frontend' | 'Backend' | 'DevOps' | 'QA' | 'Design'
 
-export type RepoType = 'Bun' | 'Elysia-API' | 'Elysia-Plugin'
+export type RepoType = 'Bun' | 'Elysia'
 
 export type RepoTeam = {
   name: string
