@@ -33,13 +33,6 @@ export type UserInput = {
   repoTopics?: string[]
   repoDescription?: string
 }
-
-/** The input required to create the README file. */
-type CreateReadMeInput = {
-  userInput: UserInput
-  repoType: RepoType
-  owner: string
-}
 // #endregion Types
 
 // #region Constants
@@ -128,18 +121,24 @@ function getUserInput(): UserInput {
  *
  * @returns The rendered README file as a string.
  */
-async function createReadMe(input: CreateReadMeInput): Promise<string> {
+async function createReadMe(input: UserInput): Promise<string> {
+  const readMeTemplatePath = `${input.repoType.toLowerCase()}/README.njk`
+
+  // Log some debug information.
+  console.log(pc.gray(`[DEBUG] README Template Path: ${readMeTemplatePath}`))
+  console.log(pc.gray(`[DEBUG] README User Input: ${JSON.stringify(input, null, 2)}`))
+
   // Get the README file for the /New-Repo-Job directory.
   const readMeTemplate = await gh.rest.repos.getContent({
     repo: 'Blog-GitHub-API-Automation-Template',
-    path: `${input.repoType.toLowerCase()}/README.njk`,
-    owner: input.owner,
+    path: readMeTemplatePath,
+    owner: input.repoOwner,
   })
 
   if (readMeTemplate.status !== 200) throw new Error('README template not found')
 
   // Log some response details from the GitHub API.
-  console.debug(pc.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
+  console.log(pc.gray(`[DEBUG] README Template Status: ${readMeTemplate.status}`))
 
   // Decode the README template file contents.
   const decodedReadMeTemplate = Buffer.from(
@@ -149,7 +148,7 @@ async function createReadMe(input: CreateReadMeInput): Promise<string> {
     readMeTemplate.data.encoding,
   ).toString()
 
-  return nj.renderString(decodedReadMeTemplate, input.userInput)
+  return nj.renderString(decodedReadMeTemplate, input)
 }
 // #endregion Functions
 
@@ -169,11 +168,7 @@ try {
   console.log(pc.cyan(debugLogMsgs.join('\n')))
 
   // Get the built README file content.
-  const builtReadMe = await createReadMe({
-    userInput,
-    owner: userInput.repoOwner,
-    repoType: userInput.repoType,
-  })
+  const builtReadMe = await createReadMe(userInput)
 
   // Log the built README file content.
   console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
