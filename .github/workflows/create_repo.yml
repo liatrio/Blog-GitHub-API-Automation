@@ -56,3 +56,5 @@ jobs:
 
       - name: Run Create Script
         run: bun run ./New-Repo-Task/index.ts
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
