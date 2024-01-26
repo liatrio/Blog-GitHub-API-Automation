@@ -57,4 +57,4 @@ jobs:
         run: bun install --cwd ./New-Repo-Task
 
       - name: Run Create Script
-        run: bun run ./New-Repo-Task/src/index.ts
+        run: bun run ./New-Repo-Task/index.ts
