@@ -22,20 +22,18 @@
     "url": "https://4lch4.com"
   },
   "type": "module",
-  "module": "./src/index.ts",
+  "module": "./index.ts",
   "files": [
-    "./src/index.ts",
+    "./index.ts",
     "package.json",
     "README.md"
   ],
   "scripts": {
-    "build": "bun build ./src/index.ts --target bun --outfile ./dist/index.js",
     "deploy": "echo \"Your deploy script goes here...\"",
-    "dev": "bun run --watch ./src/index.ts",
+    "dev": "bun run --watch ./index.ts",
     "lint": "prettier -c .",
-    "prepublishOnly": "bun run build",
     "pretty": "prettier --write .",
-    "start": "bun run dist/index.js",
+    "start": "bun run ./index.js",
     "test": "bun test"
   },
   "dependencies": {
