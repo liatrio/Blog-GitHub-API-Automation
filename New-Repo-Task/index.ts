@@ -35,6 +35,11 @@ export type UserInput = {
 // Maps to the GITHUB_TOKEN or GH_PAT secret, if it exists.
 export const ApiToken = process.env.GITHUB_TOKEN || process.env.GH_PAT
 
+console.log(pc.cyan(`[DEBUG] process.env.GITHUB_TOKEN = ${process.env.GITHUB_TOKEN}`))
+console.log(pc.cyan(`[DEBUG] process.env.GH_PAT = ${process.env.GH_PAT}`))
+console.log(pc.cyan(`[DEBUG] ApiToken = ${ApiToken}`))
+console.log(JSON.stringify(process.env, null, 2))
+
 // Throw an error if the GitHub Access Token is not found in the environment.
 if (!ApiToken) {
   throw new Error(
