@@ -89,7 +89,7 @@ export const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // #region Functions
 /**
- * Gets the user input from the action's inputs.
+ * Gets the user input from environment variables set by the GitHub Action workflow and its inputs.
  *
  * @returns The user input.
  */
@@ -102,6 +102,9 @@ function getUserInput(): UserInput {
 
   const repoType = process.env.REPO_TYPE as RepoType
   if (!repoType) throw new Error('REPO_TYPE is a required environment variable.')
+
+  const repoOwner = process.env.REPO_OWNER
+  if (!repoOwner) throw new Error('REPO_OWNER is a required environment variable.')
 
   const repoTopics = process.env.REPO_TOPICS?.split(',')
   const repoDescription = process.env.REPO_DESCRIPTION
