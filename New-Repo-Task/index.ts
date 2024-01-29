@@ -308,12 +308,6 @@ try {
   // Log the response status from the GitHub API.
   console.log(`[main] Repo Create Status: ${createRepoRes.status}`)
 
-  console.log(`[main] UserInput Repo Topics:`)
-  console.log(userInput.repoTopics)
-
-  console.log(`[main] UserInput Description`)
-  console.log(userInput.repoDescription)
-
   // Check if the user provided topics.
   if (userInput.repoTopics && userInput.repoTopics[0] !== '') {
     // If they did, replace the topics on the new repository using the GitHub API.
