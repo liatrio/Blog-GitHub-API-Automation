@@ -153,47 +153,14 @@ function getInput(): UserInput {
 }
 
 /**
- * Creates a new README file for a repository using the provided `userInput`, `owner`, and
- * `repoType` parameters, along with Nunjucks, to render and return the README file.
+ * Converts a filename from a Nunjucks template to the filename it should be in the new repository.
+ * Since there's only two files that could be a Nunjucks template, this is a simple function. If
+ * more files are added that could be a Nunjucks template, this function should be updated.
  *
- * @param input The input required to create the README file.
+ * @param filename The original filename.
  *
- * @returns The rendered README file as a string.
+ * @returns The new filename.
  */
-async function createReadMe(input: UserInput): Promise<string> {
-  const readMeTemplatePath = `${input.repoType.toLowerCase()}/README.njk`
-
-  // Log some debug information.
-  console.log(pc.gray(`[DEBUG][index#createReadMe] README Template Path: ${readMeTemplatePath}`))
-  console.log(
-    pc.gray(`[DEBUG][index#createReadMe] README User Input: ${JSON.stringify(input, null, 2)}`),
-  )
-
-  // Get the README file for the /New-Repo-Job directory.
-  const readMeTemplate = await gh.rest.repos.getContent({
-    repo: 'Blog-GitHub-API-Automation-Template',
-    path: readMeTemplatePath,
-    owner: input.repoOwner,
-  })
-
-  if (readMeTemplate.status !== 200) throw new Error('README template not found')
-
-  // Log some response details from the GitHub API.
-  console.log(
-    pc.gray(`[DEBUG][index#createReadMe] README Template Status: ${readMeTemplate.status}`),
-  )
-
-  // Decode the README template file contents.
-  const decodedReadMeTemplate = Buffer.from(
-    // @ts-ignore For some reason the types are wrong on this, so we need to ignore it.
-    readMeTemplate.data.content.toString(),
-    // @ts-ignore For some reason the types are wrong on this, so we need to ignore it.
-    readMeTemplate.data.encoding,
-  ).toString()
-
-  return nj.renderString(decodedReadMeTemplate, input)
-}
-
 function getNewFilename(filename: string) {
   if (filename === 'README.njk') return 'README.md'
   if (filename === 'package.njk') return 'package.json'
@@ -210,29 +177,30 @@ function getNewFilename(filename: string) {
 function renderFileData(file: GetContentsData, input: UserInput): RenderedTemplateFile | undefined {
   // Verify the file has content.
   if (file.content) {
+    // Get the filename and directory for the file.
     const filename = path.basename(file.path)
     const fileDir = path.dirname(file.path)
 
-    console.log(pc.cyan(`[DEBUG][index#renderFileData] Rendering file: ${filename}`))
-    console.log(pc.cyan(`[DEBUG][index#renderFileData] File Directory: ${fileDir}`))
+    console.debug(`[renderFileData] Rendering file: ${filename}`)
+    console.debug(`[renderFileData] File Directory: ${fileDir}`)
 
     // Check if the file is a Nunjucks template and render it if so.
     if (file.path.endsWith('.njk')) {
       // Get the new filename for the rendered file.
       const newFilename = getNewFilename(filename)
+
+      // Decode the file content.
       const fileContent = Buffer.from(file.content.toString(), 'base64').toString()
+
+      // Render the file content using the user input.
       const renderedContent = nj.renderString(fileContent, input)
 
-      // Log some debug information.
-      console.log(pc.cyan(`[DEBUG][index#renderFileData] New Filename: ${newFilename}`))
-      console.log(pc.cyan(`[DEBUG][index#renderFileData] File Content:\n\n${fileContent}`))
-      console.log(pc.cyan(`[DEBUG][index#renderFileData] Rendered Content:\n\n${renderedContent}`))
-
       return {
-        path: path.join(fileDir, getNewFilename(filename)),
+        path: path.join(fileDir, newFilename),
         content: renderedContent,
       }
     } else {
+      // If the file is not a Nunjucks template, return the file as-is.
       return {
         path: file.path,
         content: Buffer.from(file.content.toString(), 'base64').toString(),
@@ -241,6 +209,14 @@ function renderFileData(file: GetContentsData, input: UserInput): RenderedTempla
   } else return undefined
 }
 
+/**
+ * Gets all the files from the template specified in the user input provided by the`input`
+ * parameter, renders them using the user input, and returns them as an array of rendered files.
+ *
+ * @param input The user input to use when rendering the file.
+ *
+ * @returns An array of files to populate the new repository with.
+ */
 async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[]> {
   const renderedTemplateFiles: RenderedTemplateFile[] = []
 
@@ -258,7 +234,7 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
     if (status !== 200) throw new Error('Template file tree(s) not found')
 
     // Log some response details from the GitHub API.
-    console.log(pc.gray(`[DEBUG][index#getTemplateFiles] Template Files Tree Status: ${status}`))
+    console.debug(`[getTemplateFiles] Template Files Tree Status: ${status}`)
 
     for (const treeNode of data.tree) {
       // Check that the data is for a blob, has a path, and is in the directory for the repo type.
@@ -273,17 +249,8 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
           path: treeNode.path,
         })
 
-        // Log some response details from the GitHub API.
-        console.log(
-          pc.gray(
-            `[DEBUG][index#getTemplateFiles] Template File Content Status: ${fileContent.status}`,
-          ),
-        )
-        console.log(
-          pc.gray(
-            `[DEBUG][index#getTemplateFiles] Template File Content Data: ${fileContent.data}`,
-          ),
-        )
+        // Log the response status from the GitHub API.
+        console.debug(`[getTemplateFiles] Template File Content Status: ${fileContent.status}`)
 
         // Verify the response status was a 200.
         if (fileContent.status !== 200) throw new Error(`Template file not found: ${treeNode.path}`)
@@ -291,14 +258,14 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
         // Attempt to render the file, if it has content that is a Nunjucks template.
         const renderedTemplateFile = renderFileData(fileContent.data as GetContentsData, input)
 
-        // If the file was rendered, add it to the list of rendered files to return.
+        // If the file was rendered successfully, add it to the list of rendered files to return.
         if (renderedTemplateFile) renderedTemplateFiles.push(renderedTemplateFile)
       }
     }
 
     return renderedTemplateFiles
   } catch (error) {
-    console.error(`[ERROR][index#getTemplateFiles] Error caught when getting template files:`)
+    console.error(`[ERROR][getTemplateFiles] Error caught when getting template files:`)
     console.error(error)
 
     return []
@@ -311,51 +278,18 @@ try {
   const userInput = getInput()
 
   const debugLogMsgs = [
-    `[DEBUG][index#main] Creating a new repository with the following details:\n`,
-    `- Name: ${userInput.repoName}`,
-    `- Team: ${userInput.repoTeam.name}`,
-    `- Type: ${userInput.repoType}`,
-    `- Owner: ${userInput.repoOwner}`,
-    `- Topics: ${userInput.repoTopics?.join(', ')}`,
-    `- Description: ${userInput.repoDescription}`,
+    `[main] Creating a new repository with the following details:\n`,
+    `\t- Name: ${userInput.repoName}`,
+    `\t- Team: ${userInput.repoTeam.name}`,
+    `\t- Type: ${userInput.repoType}`,
+    `\t- Owner: ${userInput.repoOwner}`,
+    `\t- Topics: ${userInput.repoTopics?.join(', ')}`,
+    `\t- Description: ${userInput.repoDescription}`,
   ]
 
-  console.log(pc.cyan(debugLogMsgs.join('\n')))
+  console.debug(debugLogMsgs.join('\n'))
 
-  const templateFiles = await getTemplateFiles(userInput)
-
-  // Get the built README file content.
-  // const builtReadMe = await createReadMe(userInput)
-
-  // Log the built README file content.
-  // console.log(pc.cyan(`[DEBUG] Built README:\n\n${builtReadMe}`))
-  console.log(
-    pc.cyan(
-      `[DEBUG][index#main] We received the following ${templateFiles.length} files from the template repo`,
-    ),
-  )
-
-  for (const file of templateFiles) {
-    console.log(pc.cyan(`[DEBUG][index#main] File Path: ${file.path}`))
-    console.log(pc.cyan(`[DEBUG][index#main] File Content:\n${file.content}`))
-  }
-
-  // Temporarily exit the process to prevent the repo from being created.
-  process.exit(0)
   // Create the new repository using the GitHub API.
-  // const createRepoRes = await gh.rest.repos.createForAuthenticatedUser({
-  //   // Required
-  //   name: userInput.repoName,
-  //   description: userInput.repoDescription,
-
-  //   // Optional
-  //   private: true,
-  //   has_wiki: false,
-  //   has_issues: true,
-  //   has_projects: true,
-  //   has_downloads: true,
-  //   has_discussions: false,
-  // })
   const createRepoRes = await gh.rest.repos.createInOrg({
     // Required
     name: userInput.repoName,
@@ -371,11 +305,8 @@ try {
     has_discussions: false,
   })
 
-  // Log some response details from the GitHub API.
-  console.log(pc.cyan(`[DEBUG][index#main] Repo Create Status: ${createRepoRes.status}`))
-  console.log(
-    pc.cyan(`[DEBUG][index#main] Repo Create Data: ${JSON.stringify(createRepoRes.data, null, 2)}`),
-  )
+  // Log the response status from the GitHub API.
+  console.log(`[main] Repo Create Status: ${createRepoRes.status}`)
 
   // Replace the topics on the new repository using the GitHub API.
   const topicsRes = await gh.rest.repos.replaceAllTopics({
@@ -384,53 +315,32 @@ try {
     owner: userInput.repoOwner,
   })
 
-  // Log some response details from the GitHub API.
-  console.log(pc.cyan(`[DEBUG][index#main] Topics Response Status: ${topicsRes.status}`))
-  console.log(
-    pc.cyan(`[DEBUG][index#main] Topics Response Data: ${JSON.stringify(topicsRes.data, null, 2)}`),
-  )
+  // Log the response status from the GitHub API.
+  console.log(`[main] Topics Response Status: ${topicsRes.status}`)
 
-  // Update the README file in the new repository using the GitHub API.
-  // const updateReadMeRes = await gh.rest.repos.createOrUpdateFileContents({
-  //   message: 'feat: updated README with values from GitHub Action',
-  //   content: Buffer.from(builtReadMe).toString('base64'),
-  //   path: 'README.md',
-  //   repo: userInput.repoName,
-  //   owner: userInput.repoOwner,
-  // })
+  const templateFiles = await getTemplateFiles(userInput)
+  const successfulAdditions = []
 
-  // Log some response details from the GitHub API.
-  // console.log(pc.cyan(`[DEBUG] Add README Response Status: ${updateReadMeRes.status}`))
-  // console.log(
-  //   pc.cyan(`[DEBUG] Add README Response Data: ${JSON.stringify(updateReadMeRes.data, null, 2)}`),
-  // )
+  // Add the rendered template files to the new repository using the GitHub API.
+  for (const file of templateFiles) {
+    const createFileRes = await gh.rest.repos.createOrUpdateFileContents({
+      message: `feat: added ${file.path} from template repo`,
+      content: Buffer.from(file.content).toString('base64'),
+      path: file.path,
+      repo: userInput.repoName,
+      owner: userInput.repoOwner,
+    })
 
-  console.log(pc.cyan(`[DEBUG][index#main] Attempting to get content w/ following opts:\n`))
-  console.log(
-    JSON.stringify(
-      {
-        repo: 'Blog-GitHub-API-Automation-Template',
-        path: userInput.repoType.toLowerCase(),
-        owner: userInput.repoOwner,
-      },
-      null,
-      2,
-    ),
-  )
+    // Log the response status from the GitHub API.
+    console.log(pc.cyan(`[main] CreateOrUpdateFile Status: ${createFileRes.status}`))
 
-  const tmpFiles = await gh.rest.repos.getContent({
-    repo: 'Blog-GitHub-API-Automation-Template',
-    path: userInput.repoType.toLowerCase(),
-    owner: userInput.repoOwner,
-  })
+    if (createFileRes.status === 201) successfulAdditions.push(file.path)
+  }
 
-  console.log(pc.cyan(`[DEBUG][index#main] Template Files Response Status: ${tmpFiles.status}`))
-  console.log(
-    pc.cyan(
-      `[DEBUG][index#main] Template Files Response Data: ${JSON.stringify(tmpFiles.data, null, 2)}`,
-    ),
-  )
+  // Log the successful additions length and the template files length.
+  console.log(`[main] Successful Additions Length: ${successfulAdditions.length}`)
+  console.log(`[main] Template Files Length: ${templateFiles.length}`)
 } catch (error) {
-  console.error(pc.red('[ERROR][index#main] Error caught when creating and initializing repo'))
+  console.error(pc.red('[ERROR][main] Error caught when creating and initializing repo'))
   console.error(error)
 }
