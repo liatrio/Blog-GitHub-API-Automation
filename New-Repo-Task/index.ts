@@ -238,7 +238,7 @@ function renderFileData(file: GetContentsData, input: UserInput): RenderedTempla
 }
 
 async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[]> {
-  const decodedTemplateFiles: RenderedTemplateFile[] = []
+  const renderedTemplateFiles: RenderedTemplateFile[] = []
 
   try {
     // Get the git tree to gather all the files in the template repo.
@@ -275,17 +275,19 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
             `[DEBUG][index#getTemplateFiles] Template File Content Status: ${fileContent.status}`,
           ),
         )
-        console.log(fileContent.data)
 
-        // Make sure there is actually content to use.
-        for (const file of fileContent.data as GetContentsData[]) {
-          const renderedFile = renderFileData(file, input)
-          if (renderedFile) decodedTemplateFiles.push(renderedFile)
-        }
+        // Verify the response status was a 200.
+        if (fileContent.status !== 200) throw new Error(`Template file not found: ${treeNode.path}`)
+
+        // Attempt to render the file, if it has content that is a Nunjucks template.
+        const renderedTemplateFile = renderFileData(fileContent.data as GetContentsData, input)
+
+        // If the file was rendered, add it to the list of rendered files to return.
+        if (renderedTemplateFile) renderedTemplateFiles.push(renderedTemplateFile)
       }
     }
 
-    return decodedTemplateFiles
+    return renderedTemplateFiles
   } catch (error) {
     console.error(`[ERROR][index#getTemplateFiles] Error caught when getting template files:`)
     console.error(error)
