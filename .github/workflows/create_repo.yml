@@ -34,7 +34,7 @@ on:
         description: 'The type of repo to create.'
         required: true
         type: choice
-        default: Elysia
+        default: Bun
         options:
           - Bun
           - Elysia
