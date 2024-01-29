@@ -220,13 +220,17 @@ function renderFileData(file: GetContentsData, input: UserInput): RenderedTempla
     if (file.path.endsWith('.njk')) {
       // Get the new filename for the rendered file.
       const newFilename = getNewFilename(filename)
+      const fileContent = Buffer.from(file.content.toString(), 'base64').toString()
+      const renderedContent = nj.renderString(fileContent, input)
 
       // Log some debug information.
       console.log(pc.cyan(`[DEBUG][index#renderFileData] New Filename: ${newFilename}`))
+      console.log(pc.cyan(`[DEBUG][index#renderFileData] File Content:\n\n${fileContent}`))
+      console.log(pc.cyan(`[DEBUG][index#renderFileData] Rendered Content:\n\n${renderedContent}`))
 
       return {
         path: path.join(fileDir, getNewFilename(filename)),
-        content: nj.renderString(Buffer.from(file.content.toString(), 'base64').toString(), input),
+        content: renderedContent,
       }
     } else {
       return {
@@ -273,6 +277,11 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
         console.log(
           pc.gray(
             `[DEBUG][index#getTemplateFiles] Template File Content Status: ${fileContent.status}`,
+          ),
+        )
+        console.log(
+          pc.gray(
+            `[DEBUG][index#getTemplateFiles] Template File Content Data: ${fileContent.data}`,
           ),
         )
 
