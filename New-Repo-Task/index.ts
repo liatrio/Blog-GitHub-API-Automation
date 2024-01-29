@@ -308,15 +308,18 @@ try {
   // Log the response status from the GitHub API.
   console.log(`[main] Repo Create Status: ${createRepoRes.status}`)
 
-  // Replace the topics on the new repository using the GitHub API.
-  const topicsRes = await gh.rest.repos.replaceAllTopics({
-    names: userInput.repoTopics || [],
-    repo: userInput.repoName,
-    owner: userInput.repoOwner,
-  })
-
-  // Log the response status from the GitHub API.
-  console.log(`[main] Topics Response Status: ${topicsRes.status}`)
+  // Check if the user provided topics.
+  if (userInput.repoTopics?.length !== 0) {
+    // If they did, replace the topics on the new repository using the GitHub API.
+    const topicsRes = await gh.rest.repos.replaceAllTopics({
+      names: userInput.repoTopics || [],
+      repo: userInput.repoName,
+      owner: userInput.repoOwner,
+    })
+  
+    // Log the response status from the GitHub API.
+    console.log(`[main] Topics Response Status: ${topicsRes.status}`)
+  }
 
   const templateFiles = await getTemplateFiles(userInput)
   const successfulAdditions = []
