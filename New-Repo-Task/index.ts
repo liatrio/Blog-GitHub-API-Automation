@@ -328,6 +328,7 @@ try {
 
   for (const file of templateFiles) {
     console.log(pc.cyan(`[DEBUG][index#main] File Path: ${file.path}`))
+    console.log(pc.cyan(`[DEBUG][index#main] File Content:\n${file.content}`))
   }
 
   // Temporarily exit the process to prevent the repo from being created.
