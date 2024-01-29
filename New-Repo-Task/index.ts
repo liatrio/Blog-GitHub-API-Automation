@@ -315,14 +315,14 @@ try {
   console.log(userInput.repoDescription)
 
   // Check if the user provided topics.
-  if (userInput.repoTopics?.length !== 0) {
+  if (userInput.repoTopics && userInput.repoTopics[0] !== '') {
     // If they did, replace the topics on the new repository using the GitHub API.
     const topicsRes = await gh.rest.repos.replaceAllTopics({
       names: userInput.repoTopics || [],
       repo: userInput.repoName,
       owner: userInput.repoOwner,
     })
-  
+
     // Log the response status from the GitHub API.
     console.log(`[main] Topics Response Status: ${topicsRes.status}`)
   }
@@ -333,7 +333,7 @@ try {
   // Add the rendered template files to the new repository using the GitHub API.
   for (const file of templateFiles) {
     console.log(`[main] Adding file: ${file.path}`)
-    
+
     const createFileRes = await gh.rest.repos.createOrUpdateFileContents({
       message: `feat: added ${file.path} from template repo`,
       content: Buffer.from(file.content).toString('base64'),
