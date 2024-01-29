@@ -269,6 +269,14 @@ async function getTemplateFiles(input: UserInput): Promise<RenderedTemplateFile[
           path: treeNode.path,
         })
 
+        // Log some response details from the GitHub API.
+        console.log(
+          pc.gray(
+            `[DEBUG][index#getTemplateFiles] Template File Content Status: ${fileContent.status}`,
+          ),
+        )
+        console.log(fileContent.data)
+
         // Make sure there is actually content to use.
         for (const file of fileContent.data as GetContentsData[]) {
           const renderedFile = renderFileData(file, input)
