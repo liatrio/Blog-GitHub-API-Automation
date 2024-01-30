@@ -331,7 +331,7 @@ try {
     const createFileRes = await gh.rest.repos.createOrUpdateFileContents({
       message: `feat: added ${file.path} from template repo`,
       content: Buffer.from(file.content).toString('base64'),
-      path: file.path,
+      path: file.path.substring(file.path.indexOf('/') + 1),
       repo: userInput.repoName,
       owner: userInput.repoOwner,
     })
